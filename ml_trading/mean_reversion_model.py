@@ -1,11 +1,23 @@
+# -*- coding: UTF-8 -*-
+import numpy as np
+import pandas as pd
+import statsmodels.tsa.stattools as ts
 
+import sys
+reload(sys)
+sys.setdefaultencoding('utf-8')
 
-class MeanReversionModel(AlphaModel):
-	def __init__(self):
+#class MeanReversionModel(AlphaModel):
+class MeanReversionModel:
+	def __init__(self,threshold=0.8,window_size=1):
 		self.threshold = 0.8
+		self.window_size=window_size
 
 	def calcADF(self,df):
-		adf_result = ts.adfuller(df)
+		try:
+			adf_result = ts.adfuller(df)
+		except:
+			return 0,0,0,0
 		critical_values = adf_result[4]
 	
 		return adf_result[0], critical_values['1%'], critical_values['5%'], critical_values['10%']
@@ -41,10 +53,11 @@ class MeanReversionModel(AlphaModel):
 		price_arbitrage = current_price - moving_average
 
 		if verbose:
-			print("diff=%s, price=%s, moving_average=%s, moving_average_std=%s" % (price_arbitrage, current_price, moving_average, moving_average_std)
-		if abs(price_arbitrage) > moving_average_std * self.threshold:
-			if np.sign(price_arbitrage) > 0:
-				return SHORT
-			else:
-				return LONG
+			print("diff=%s, price=%s, moving_average=%s, moving_average_std=%s" % (price_arbitrage, current_price, moving_average, moving_average_std))
+
+		#if abs(price_arbitrage) > (moving_average_std * self.threshold):
+			#if np.sign(price_arbitrage) > 0:
+				#return SHORT
+			#else:
+				#return LONG
 		return HOLD

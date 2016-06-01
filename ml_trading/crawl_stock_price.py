@@ -65,9 +65,10 @@ print(len(stocks), " symbols")
 begin = datetime.date(2000,1,1)
 end = datetime.date(2016,5,30)
 
-shuffle(stocks)
+missing = ['KRX:152550']
 
-for i, stock in enumerate(stocks):
+#for i, stock in enumerate(stocks[160:769]):
+for i, stock in enumerate(missing):
 	print("%d th code=%s" % (i, stock))
 	now = datetime.datetime.now()
 	df = download_daily_bars(stock,begin,end)

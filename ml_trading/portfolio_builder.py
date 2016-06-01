@@ -1,6 +1,8 @@
 # -*- coding: UTF-8 -*-
+import numpy as np
 import pandas as pd
 from arctic import Arctic
+import arctic
 from mean_reversion_model import MeanReversionModel
 from machine_learning_model import MachineLearningModel
 import sys
@@ -9,39 +11,40 @@ sys.setdefaultencoding('utf-8')
 
 class PortfolioBuilder:
 	def __init__(self):
+		self.mean_reversion_model = MeanReversionModel()
 		self.symbols = []
 		krx = pd.read_csv('krx_market_symbols.csv', dtype=object)
-		self.symbols = [x for x in krx['code_google','company']]
+		self.symbols = krx[['code_google','company']].values.tolist()
 		
-	def getsymbols():
+	def getsymbols(self):
 		return self.symbols 
 
-	def load_data_frame(code):
+	def load_data_frame(self, code):
 		db = Arctic('localhost')
 		stck = db['KRX_G']
-		return stck[code].data
+		return stck.read(code).data
 	
-	def do_stationary_test(self, column, lags_count=100):
+	def do_stationarity_test(self, column, lags_count=100):
 		rows_code = self.getsymbols()
-		print(rows_code)	
-		return Null
 		test_result = {'code':[], 'company':[], 'adf_statistic':[], 'adf_1':[], 'adf_5':[], 'adf_10':[], 'hurst':[], 'halflife': []}
 		index = 1
 		for a_row_code in rows_code:
 			code = a_row_code[0]
 			company = a_row_code[1]
 			
-			#print("... %s of %s: testing stationarity on %s %s" %(index, len(rows_code), code, company)
-
-			a_df = self.load_data_frame(code)
-			a_df_column = a_df[column]
-			
+			print("... %s of %s: testing stationarity on %s %s" %(index, len(rows_code), code, company))
+			try:
+				a_df = self.load_data_frame(code)
+			except arctic.exceptions.NoDataFoundException:
+				print("error: %s, %s" % (code, sys.exc_info()[0]))
+				continue
+			a_df_column = pd.DataFrame([float(x.replace(',','')) if isinstance(x,(str,unicode)) else x for x in a_df[column]])
 			if a_df_column.shape[0] > 0:
 				test_result['code'].append(code)
 				test_result['company'].append(company)
 				test_result['hurst'].append(self.mean_reversion_model.calcHurstExponent(a_df_column, lags_count))
-				test_result['halflife'].append(self.mean_reversion_model.calcHalfLife(a_df_column))
-				test_stat, adf_1, adf_5, adf_10 = self.mean_reversion_model.calcADF(a_df_column)
+				test_result['halflife'].append(self.mean_reversion_model.calcHalfLife(a_df_column.ix[:,0]))
+				test_stat, adf_1, adf_5, adf_10 = self.mean_reversion_model.calcADF(a_df_column.ix[:,0])
 				test_result['adf_statistic'].append(test_stat)
 				test_result['adf_1'].append(adf_1)
 				test_result['adf_5'].append(adf_5)
@@ -58,7 +61,7 @@ class PortfolioBuilder:
 		df_stationarity['rank_hurst'] = 0
 		df_stationarity['rank_halflife'] = 0
 
-		halflife_percentile = np.percentile(df_stationarity['halflife'], np.arange(0,100,10)) # quartiles
+		halflife_percentile = np.nanpercentile(df_stationarity['halflife'], np.arange(0,100,10)) # quartiles
 
 		for row_index in range(df_stationarity.shape[0]):
 			df_stationarity.loc[row_index, 'rank_adf'] = self.assessADF(

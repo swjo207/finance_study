@@ -1,6 +1,10 @@
 
 
-class MachineLearningModel(AlphaModel):
+#class MachineLearningModel(AlphaModel):
+class MachineLearningModel:
+	def __init__(self):
+		self.predictor = []
+		
 	def calcScore(self, split_ratio=0.75, time_lags=10):
 		return self.predictor.trainAll(split_ratio=split_ration, time_lags=time_lags)
 	
